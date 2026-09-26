@@ -1,0 +1,1 @@
+"""EuroLeague analytics API."""

@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: public
+    tables:
+      - name: raw_games
+        description: Idempotently loaded season game-code records from EuroLeague.
+        columns:
+          - name: season
+            tests: [not_null]
+          - name: game_code
+            tests: [not_null, unique]
