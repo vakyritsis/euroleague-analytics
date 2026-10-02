@@ -69,6 +69,23 @@ jobs:
           psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -tc "CREATE SCHEMA IF NOT EXISTS analytics;"
           psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -f ingestion/schema.sql
 
+      - name: Load season game data into raw tables
+        run: |
+          python - <<'PY'
+          import os
+          from ingestion.config import get_settings
+          from ingestion.definitions import raw_games, season_game_codes
+          from ingestion.resources import EuroLeagueResource, PostgresResource
+
+          settings = get_settings()
+          database_url = os.environ.get("DATABASE_URL") or settings.database_url
+          postgres = PostgresResource(database_url=database_url)
+          euroleague = EuroLeagueResource()
+          games = season_game_codes(euroleague)
+          loaded = raw_games(games, postgres)
+          print(f"Loaded {loaded} raw game rows for season {settings.euroleague_season}")
+          PY
+
       - name: dbt deps
         run: dbt deps --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
 
