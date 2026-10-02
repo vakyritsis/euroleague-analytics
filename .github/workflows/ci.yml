@@ -33,7 +33,7 @@ jobs:
       POSTGRES_USER: euroleague
       POSTGRES_PASSWORD: euroleague
       DATABASE_URL: postgresql+psycopg://euroleague:euroleague@localhost:5432/euroleague
-      PYTHONPATH: .
+      PYTHONPATH: .:${{ github.workspace }}/backend
 
     steps:
       - name: Checkout
@@ -57,7 +57,8 @@ jobs:
           psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -f ingestion/schema.sql
 
       - name: Run backend and ingestion tests
-        run: pytest backend/tests ingestion/tests -q
+        run: |
+          PYTHONPATH="$PWD:$PWD/backend" pytest backend/tests ingestion/tests -q
 
       - name: dbt deps
         run: dbt deps --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project

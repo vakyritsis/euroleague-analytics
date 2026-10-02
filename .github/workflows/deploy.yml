@@ -25,7 +25,8 @@ jobs:
           pip install dbt-postgres
 
       - name: Run test suite
-        run: pytest backend/tests ingestion/tests -q
+        run: |
+          PYTHONPATH="$PWD:$PWD/backend" pytest backend/tests ingestion/tests -q
 
       - name: dbt parse
         run: dbt parse --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
