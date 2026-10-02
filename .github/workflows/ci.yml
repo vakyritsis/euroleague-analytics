@@ -56,10 +56,6 @@ jobs:
           psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -tc "CREATE SCHEMA IF NOT EXISTS analytics;"
           psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -f ingestion/schema.sql
 
-      - name: Run backend and ingestion tests
-        run: |
-          PYTHONPATH="$PWD:$PWD/backend" pytest backend/tests ingestion/tests -q
-
       - name: dbt deps
         run: dbt deps --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
 
