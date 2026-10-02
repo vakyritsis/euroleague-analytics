@@ -1,8 +1,13 @@
+import logging
+
 from dagster import Definitions, asset
 from requests import HTTPError
+from requests.exceptions import RequestException
 
 from ingestion.config import get_settings
 from ingestion.resources import EuroLeagueResource, PostgresResource
+
+logger = logging.getLogger(__name__)
 
 
 @asset
@@ -98,8 +103,18 @@ def raw_shots(
         if game_code is None:
             continue
         try:
-            shots = shot_client.get_game_shot_data(settings.euroleague_season, int(game_code))
-        except HTTPError:
+            game_code = int(game_code)
+        except (TypeError, ValueError):
+            logger.warning("Skipping raw shot ingestion for invalid game code %r", game_code)
+            continue
+        try:
+            shots = shot_client.get_game_shot_data(settings.euroleague_season, game_code)
+        except RequestException as error:
+            logger.warning(
+                "Skipping raw shots for game_code=%s after API request failed: %s",
+                game_code,
+                error,
+            )
             continue
         rows = shots.to_dict(orient="records") if hasattr(shots, "to_dict") else shots
         if not rows:
@@ -107,7 +122,7 @@ def raw_shots(
         postgres.insert_json(
             "raw_shots",
             ("season", "game_code"),
-            (settings.euroleague_season, int(game_code)),
+            (settings.euroleague_season, game_code),
             rows,
         )
         inserted += 1
