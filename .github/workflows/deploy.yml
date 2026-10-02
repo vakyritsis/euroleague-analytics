@@ -8,6 +8,31 @@ on:
 jobs:
   validate-main:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: euroleague
+          POSTGRES_USER: euroleague
+          POSTGRES_PASSWORD: euroleague
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U euroleague -d euroleague"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: euroleague
+      POSTGRES_USER: euroleague
+      POSTGRES_PASSWORD: euroleague
+      DATABASE_URL: postgresql+psycopg://euroleague:euroleague@localhost:5432/euroleague
+      PYTHONPATH: .:${{ github.workspace }}/backend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,6 +48,24 @@ jobs:
           pip install -r ingestion/requirements.txt
           pip install -r backend/requirements.txt
           pip install dbt-postgres
+
+      - name: Wait for Postgres to accept connections
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
+              echo "Postgres is ready"
+              exit 0
+            fi
+            echo "Waiting for Postgres... ($i/30)"
+            sleep 2
+          done
+          echo "Postgres did not become ready in time" >&2
+          exit 1
+
+      - name: Prepare Postgres for dbt validation
+        run: |
+          psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -tc "CREATE SCHEMA IF NOT EXISTS analytics;"
+          psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:$POSTGRES_PORT/$POSTGRES_DB -f ingestion/schema.sql
 
       - name: Load season game data into raw tables
         run: |
