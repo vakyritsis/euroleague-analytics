@@ -63,5 +63,9 @@ jobs:
       - name: dbt deps
         run: dbt deps --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
 
-      - name: dbt parse
-        run: dbt parse --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
+      - name: dbt build
+        run: dbt build --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
+
+      - name: Run backend and ingestion tests
+        run: |
+          PYTHONPATH="$PWD:$PWD/backend" pytest backend/tests ingestion/tests -q

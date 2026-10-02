@@ -24,12 +24,12 @@ jobs:
           pip install -r backend/requirements.txt
           pip install dbt-postgres
 
+      - name: dbt build
+        run: dbt build --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
+
       - name: Run test suite
         run: |
           PYTHONPATH="$PWD:$PWD/backend" pytest backend/tests ingestion/tests -q
-
-      - name: dbt parse
-        run: dbt parse --project-dir warehouse/dbt_project --profiles-dir warehouse/dbt_project
 
   # Replace this block with a real deployment target when ready:
   # - Fly.io
