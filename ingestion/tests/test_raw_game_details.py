@@ -17,11 +17,14 @@ class FakeShotData:
 
 
 class FakePlayByPlay:
-    def __init__(self):
+    def __init__(self, failing_game_codes=()):
         self.calls = []
+        self.failing_game_codes = set(failing_game_codes)
 
     def get_game_play_by_play_data(self, season, gamecode, include_ishometeam=False):
         self.calls.append((season, gamecode, include_ishometeam))
+        if gamecode in self.failing_game_codes:
+            raise HTTPError("play-by-play endpoint unavailable")
         return pd.DataFrame([{"PLAYER": "Player 1", "CODETEAM": "MAD", "PLAYER_ID": " 7 ", "PLAYTYPE": " FGM ", "MARKERTIME": " 00:42 "}])
 
 
@@ -88,7 +91,8 @@ def test_raw_shots_logs_api_failure_and_continues(caplog):
 
 def test_raw_play_by_play_asset_inserts_game_level_pbp_rows():
     postgres = FakePostgres()
-    euroleague = type("FakeEuroLeague", (), {"play_by_play_client": lambda self: FakePlayByPlay()})()
+    play_by_play = FakePlayByPlay()
+    euroleague = type("FakeEuroLeague", (), {"play_by_play_client": lambda self: play_by_play})()
 
     result = raw_play_by_play(
         season_game_codes=[{"gameCode": 201}, {"gameCode": 202}],
@@ -98,4 +102,52 @@ def test_raw_play_by_play_asset_inserts_game_level_pbp_rows():
 
     assert result == 2
     assert postgres.calls[0]["table"] == "raw_play_by_play"
+    assert postgres.calls[0]["key_columns"] == ("season", "game_code")
     assert postgres.calls[0]["key_values"] == (2025, 201)
+    assert postgres.calls[0]["payload"] == [
+        {
+            "PLAYER": "Player 1",
+            "CODETEAM": "MAD",
+            "PLAYER_ID": " 7 ",
+            "PLAYTYPE": " FGM ",
+            "MARKERTIME": " 00:42 ",
+        }
+    ]
+    assert play_by_play.calls == [(2025, 201, False), (2025, 202, False)]
+
+
+def test_raw_play_by_play_skips_malformed_game_codes():
+    postgres = FakePostgres()
+    play_by_play = FakePlayByPlay()
+    euroleague = type("FakeEuroLeague", (), {"play_by_play_client": lambda self: play_by_play})()
+
+    result = raw_play_by_play(
+        season_game_codes=[
+            {"gameCode": None},
+            {"gameCode": "not-a-code"},
+            {"game_code": "203"},
+        ],
+        euroleague=euroleague,
+        postgres=postgres,
+    )
+
+    assert result == 1
+    assert play_by_play.calls == [(2025, 203, False)]
+    assert postgres.calls[0]["key_values"] == (2025, 203)
+
+
+def test_raw_play_by_play_logs_api_failure_and_continues(caplog):
+    postgres = FakePostgres()
+    play_by_play = FakePlayByPlay(failing_game_codes={204})
+    euroleague = type("FakeEuroLeague", (), {"play_by_play_client": lambda self: play_by_play})()
+
+    result = raw_play_by_play(
+        season_game_codes=[{"gameCode": 204}, {"gameCode": 205}],
+        euroleague=euroleague,
+        postgres=postgres,
+    )
+
+    assert result == 1
+    assert play_by_play.calls == [(2025, 204, False), (2025, 205, False)]
+    assert postgres.calls[0]["key_values"] == (2025, 205)
+    assert "204" in caplog.text
