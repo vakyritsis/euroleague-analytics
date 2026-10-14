@@ -143,8 +143,18 @@ def raw_play_by_play(
         if game_code is None:
             continue
         try:
-            pbp = pbp_client.get_game_play_by_play_data(settings.euroleague_season, int(game_code))
-        except HTTPError:
+            game_code = int(game_code)
+        except (TypeError, ValueError):
+            logger.warning("Skipping raw play-by-play ingestion for invalid game code %r", game_code)
+            continue
+        try:
+            pbp = pbp_client.get_game_play_by_play_data(settings.euroleague_season, game_code)
+        except RequestException as error:
+            logger.warning(
+                "Skipping raw play-by-play for game_code=%s after API request failed: %s",
+                game_code,
+                error,
+            )
             continue
         rows = pbp.to_dict(orient="records") if hasattr(pbp, "to_dict") else pbp
         if not rows:
@@ -152,7 +162,7 @@ def raw_play_by_play(
         postgres.insert_json(
             "raw_play_by_play",
             ("season", "game_code"),
-            (settings.euroleague_season, int(game_code)),
+            (settings.euroleague_season, game_code),
             rows,
         )
         inserted += 1
