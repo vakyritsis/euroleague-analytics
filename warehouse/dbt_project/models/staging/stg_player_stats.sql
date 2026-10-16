@@ -31,6 +31,10 @@ cleaned as (
         endpoint,
         statistic_mode,
         loaded_at,
+        case
+            when endpoint = 'leaders' then 'TimePlayed'
+            else nullif(split_part(endpoint, ':', 2), '')
+        end as stat_category,
         coalesce(
             nullif(player ->> 'playerCode', ''),
             nullif(player ->> 'playerId', ''),
@@ -42,47 +46,35 @@ cleaned as (
             nullif(player ->> 'PLAYER', '')
         ) as player_name,
         coalesce(
+            nullif(player ->> 'clubCodes', ''),
             nullif(player ->> 'teamCode', ''),
             nullif(player ->> 'CODETEAM', ''),
             nullif(player ->> 'TEAM', '')
         ) as team_code,
         coalesce(
+            nullif(player ->> 'clubNames', ''),
             nullif(player ->> 'team', ''),
             nullif(player ->> 'teamName', ''),
             nullif(player ->> 'TEAM_NAME', '')
         ) as team_name,
-        nullif(coalesce(player ->> 'gamesPlayed', player ->> 'GAMES_PLAYED'), '')::integer
-            as games_played,
+        nullif(coalesce(player ->> 'gamesPlayed', player ->> 'GAMES_PLAYED'), '')::integer as games_played,
         nullif(coalesce(player ->> 'gamesStarted', player ->> 'GAMES_STARTED'), '')::integer
             as games_started,
-        nullif(coalesce(player ->> 'points', player ->> 'POINTS'), '')::numeric as points,
-        nullif(coalesce(player ->> 'totalRebounds', player ->> 'TOTAL_REBOUNDS'), '')::numeric
-            as rebounds,
+        nullif(coalesce(player ->> 'total', player ->> 'TOTAL'), '')::numeric as stat_total,
         nullif(
-            coalesce(
-                player ->> 'assistances',
-                player ->> 'assists',
-                player ->> 'ASSISTS'
-            ),
+            coalesce(player ->> 'averagePerGame', player ->> 'AVERAGE_PER_GAME'),
             ''
-        )::numeric as assists,
-        nullif(coalesce(player ->> 'steals', player ->> 'STEALS'), '')::numeric as steals,
-        nullif(coalesce(player ->> 'valuation', player ->> 'VALUATION'), '')::numeric
-            as valuation,
+        )::numeric as stat_per_game,
         nullif(
-            coalesce(
-                player ->> 'effectiveFeildGoalPercentage',
-                player ->> 'effectiveFieldGoalPercentage',
-                player ->> 'EFG_PERCENT'
-            ),
+            coalesce(player ->> 'averagePer100Possessions', player ->> 'AVERAGE_PER_100_POSSESSIONS'),
             ''
-        )::numeric as efg_percent,
+        )::numeric as stat_per_100_possessions,
         source_ordinal
     from player_rows
 )
 
 select
     *,
-    jsonb_build_array(season, endpoint, statistic_mode, player_id)::text
+    jsonb_build_array(season, stat_category, player_id)::text
         as player_season_key
 from cleaned

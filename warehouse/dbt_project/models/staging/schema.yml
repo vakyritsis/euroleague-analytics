@@ -16,13 +16,29 @@ models:
       - name: statistic_mode
         description: Aggregation mode used when the statistics were requested.
         tests: [not_null]
+      - name: stat_category
+        description: Leaderboard statistic category represented by the raw row.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - TimePlayed
+                  - Score
+                  - TotalRebounds
+                  - Assistances
+                  - Valuation
+                  - FieldGoalsMade2
+                  - FieldGoalsAttempted2
+                  - FieldGoalsMade3
+                  - FieldGoalsAttempted3
       - name: player_id
         description: EuroLeague player identifier.
         tests: [not_null]
       - name: team_code
         description: EuroLeague team code when included in the source statistics record.
       - name: player_season_key
-        description: Composite identity for a season, endpoint, statistic mode, and player.
+        description: Composite identity for a season, statistic category, and player.
         tests: [not_null, unique]
 
   - name: stg_shots
