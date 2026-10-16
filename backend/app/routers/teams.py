@@ -18,6 +18,24 @@ class TeamStanding(BaseModel):
     point_difference: int
 
 
+class TeamPerformance(BaseModel):
+    season: int
+    competition: str
+    standings_round: int | None
+    team_code: str
+    team_name: str | None
+    league_position: int | None
+    games_played: int | None
+    wins: int | None
+    losses: int | None
+    points_for: float | None
+    points_against: float | None
+    point_differential: float | None
+    win_percentage: float | None
+    points_for_per_game: float | None
+    points_against_per_game: float | None
+
+
 STANDINGS_QUERY = """
     WITH team_games AS (
         SELECT home_team_code AS team_code, home_team AS team_name,
@@ -52,12 +70,19 @@ def standings(season: int = Query(default=None)) -> list[TeamStanding]:
     return [TeamStanding.model_validate(row, from_attributes=False) for row in rows]
 
 
-@router.get("/teams/{team_code}", response_model=TeamStanding)
-def team_summary(team_code: str, season: int = Query(default=None)) -> TeamStanding:
-    selected_season = season or get_settings().euroleague_season
-    query = f"{STANDINGS_QUERY} HAVING team_code = %s"
+@router.get("/teams/{team_code}", response_model=TeamPerformance)
+def team_summary(team_code: str, season: int = Query(default=None, ge=1900, le=2100)) -> TeamPerformance:
+    selected_season = season if season is not None else get_settings().euroleague_season
+    query = """
+        SELECT season, competition, standings_round, team_code, team_name,
+               league_position, games_played, wins, losses, points_for,
+               points_against, point_differential, win_percentage,
+               points_for_per_game, points_against_per_game
+        FROM analytics.fct_team_performance
+        WHERE season = %s AND team_code = %s
+    """
     with get_connection() as connection:
-        row = connection.execute(query, (selected_season, selected_season, team_code)).fetchone()
+        row = connection.execute(query, (selected_season, team_code)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Team not found")
-    return TeamStanding.model_validate(row, from_attributes=False)
+    return TeamPerformance.model_validate(row, from_attributes=False)
