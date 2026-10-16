@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: stg_player_stats
+    description: >
+      Standardized season player statistics. Each raw leader record is expanded
+      into a row with normalized player, team, identity, and common efficiency
+      fields while retaining the source endpoint and statistic mode.
+    columns:
+      - name: season
+        description: EuroLeague season start year.
+        tests: [not_null]
+      - name: endpoint
+        description: Raw player statistics endpoint name.
+        tests: [not_null]
+      - name: statistic_mode
+        description: Aggregation mode used when the statistics were requested.
+        tests: [not_null]
+      - name: player_id
+        description: EuroLeague player identifier.
+        tests: [not_null]
+      - name: team_code
+        description: EuroLeague team code when included in the source statistics record.
+      - name: player_season_key
+        description: Composite identity for a season, endpoint, statistic mode, and player.
+        tests: [not_null, unique]
+
+  - name: stg_shots
+    description: >
+      One normalized row per shot event, expanded from the raw game payload
+      and retaining standardized player, team, action, coordinate, and clock fields.
+    columns:
+      - name: season
+        description: EuroLeague season start year.
+        tests: [not_null]
+      - name: game_code
+        description: EuroLeague game identifier.
+        tests: [not_null]
+      - name: shot_index
+        description: Zero-based ordering key for a shot within its raw game payload.
+        tests: [not_null]
+      - name: shot_key
+        description: Composite identity for a shot within a season and game.
+        tests: [not_null, unique]
+
+  - name: stg_play_by_play
+    description: >
+      One normalized row per play-by-play event, expanded from the raw game
+      payload and retaining sequence, period, clock, actor, team, and score fields.
+    columns:
+      - name: season
+        description: EuroLeague season start year.
+        tests: [not_null]
+      - name: game_code
+        description: EuroLeague game identifier.
+        tests: [not_null]
+      - name: event_index
+        description: Zero-based ordering key for an event within its raw game payload.
+        tests: [not_null]
+      - name: event_key
+        description: Composite identity for an event within a season and game.
+        tests: [not_null, unique]
