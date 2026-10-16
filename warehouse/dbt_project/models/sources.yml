@@ -11,3 +11,26 @@ sources:
             tests: [not_null]
           - name: game_code
             tests: [not_null, unique]
+      - name: raw_player_stats
+        description: Season-level player statistics leader rows from EuroLeague.
+        columns:
+          - name: season
+            tests: [not_null]
+          - name: endpoint
+            tests: [not_null]
+          - name: statistic_mode
+            tests: [not_null]
+      - name: raw_shots
+        description: Idempotently loaded shot event arrays, one raw payload per game.
+        columns:
+          - name: season
+            tests: [not_null]
+          - name: game_code
+            tests: [not_null]
+      - name: raw_play_by_play
+        description: Idempotently loaded play-by-play event arrays, one raw payload per game.
+        columns:
+          - name: season
+            tests: [not_null]
+          - name: game_code
+            tests: [not_null]
