@@ -20,6 +20,13 @@ sources:
             tests: [not_null]
           - name: statistic_mode
             tests: [not_null]
+      - name: raw_standings
+        description: Latest available standings snapshot with team records and scoring totals.
+        columns:
+          - name: season
+            tests: [not_null]
+          - name: competition
+            tests: [not_null]
       - name: raw_shots
         description: Idempotently loaded shot event arrays, one raw payload per game.
         columns:

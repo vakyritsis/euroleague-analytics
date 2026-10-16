@@ -181,36 +181,53 @@ def raw_player_stats(
 ) -> int:
     settings = get_settings()
     statistic_mode = "Accumulated"
-    try:
-        stats = _fetch_with_retry(
-            lambda: euroleague.player_stats_client().get_player_stats_leaders_single_season(
-                settings.euroleague_season,
-                top_n=500,
-                statistic_mode=statistic_mode,
-            ),
-            context=f"player stats for season {settings.euroleague_season}",
-        )
-    except RequestException as error:
-        logger.warning(
-            "Skipping raw_player_stats for season=%s because the API request failed: %s",
-            settings.euroleague_season,
-            error,
-        )
-        return 0
-    rows = _to_rows(stats)
-    if not rows:
-        logger.warning(
-            "Skipping raw_player_stats for season=%s because the response was empty",
-            settings.euroleague_season,
-        )
-        return 0
-    postgres.insert_json(
-        "raw_player_stats",
-        ("season", "endpoint", "statistic_mode"),
-        (settings.euroleague_season, "leaders", statistic_mode),
-        rows,
+    stat_categories = (
+        "Score",
+        "TotalRebounds",
+        "Assistances",
+        "Valuation",
+        "FieldGoalsMade2",
+        "FieldGoalsAttempted2",
+        "FieldGoalsMade3",
+        "FieldGoalsAttempted3",
     )
-    return len(rows)
+    player_stats_client = euroleague.player_stats_client()
+    inserted = 0
+    for category in stat_categories:
+        try:
+            stats = _fetch_with_retry(
+                lambda: player_stats_client.get_player_stats_leaders_single_season(
+                    settings.euroleague_season,
+                    stat_category=category,
+                    top_n=500,
+                    statistic_mode=statistic_mode,
+                ),
+                context=f"player stats category={category} for season {settings.euroleague_season}",
+            )
+        except RequestException as error:
+            logger.warning(
+                "Skipping raw player stats category=%s for season=%s after API request failed: %s",
+                category,
+                settings.euroleague_season,
+                error,
+            )
+            continue
+        rows = _to_rows(stats)
+        if not rows:
+            logger.warning(
+                "Skipping empty raw player stats category=%s for season=%s",
+                category,
+                settings.euroleague_season,
+            )
+            continue
+        postgres.insert_json(
+            "raw_player_stats",
+            ("season", "endpoint", "statistic_mode"),
+            (settings.euroleague_season, f"leaders:{category}", statistic_mode),
+            rows,
+        )
+        inserted += len(rows)
+    return inserted
 
 
 @asset(deps=[season_game_codes])

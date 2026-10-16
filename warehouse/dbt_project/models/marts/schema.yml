@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: fct_team_performance
+    description: >
+      One row per team, season, and competition from the latest standings
+      snapshot, including record, points, win percentage, and per-game scoring.
+    columns:
+      - name: season
+        description: EuroLeague season start year.
+        tests: [not_null]
+      - name: competition
+        description: EuroLeague competition code.
+        tests: [not_null]
+      - name: team_code
+        description: EuroLeague team identifier.
+        tests: [not_null]
+      - name: team_name
+        description: Display name of the team.
+      - name: wins
+        description: Games won in the standings snapshot.
+        tests: [not_null]
+      - name: losses
+        description: Games lost in the standings snapshot.
+        tests: [not_null]
+      - name: win_percentage
+        description: Win ratio from 0 to 1.
+        tests: [not_null]
+      - name: points_for_per_game
+        description: Points scored per game in the standings snapshot.
+        tests: [not_null]
+      - name: points_against_per_game
+        description: Points conceded per game in the standings snapshot.
+        tests: [not_null]
+      - name: team_season_key
+        description: Composite identity for a team season and competition.
+        tests: [not_null, unique]
+
+  - name: fct_player_performance
+    description: >
+      One row per player and season, combining accumulated player leader
+      categories into per-game, shooting, and efficiency metrics.
+    columns:
+      - name: season
+        description: EuroLeague season start year.
+        tests: [not_null]
+      - name: player_id
+        description: EuroLeague player identifier.
+        tests: [not_null]
+      - name: games_played
+        description: Games played during the season.
+        tests: [not_null]
+      - name: points_per_game
+        description: Accumulated points divided by games played.
+        tests: [not_null]
+      - name: rebounds_per_game
+        description: Accumulated rebounds divided by games played.
+        tests: [not_null]
+      - name: assists_per_game
+        description: Accumulated assists divided by games played.
+        tests: [not_null]
+      - name: effective_field_goal_percentage
+        description: (Field goals made + 0.5 x three-pointers made) / field goals attempted.
+        tests: [not_null]
+      - name: player_season_key
+        description: Composite identity for a player and season.
+        tests: [not_null, unique]
