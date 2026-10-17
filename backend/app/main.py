@@ -3,10 +3,14 @@ import psycopg
 
 from app.db import get_connection
 from app.routers.games import router as games_router
+from app.routers.players import router as players_router
+from app.routers.shots import router as shots_router
 from app.routers.teams import router as teams_router
 
 app = FastAPI(title="EuroLeague Analytics API", version="0.1.0")
 app.include_router(games_router)
+app.include_router(players_router)
+app.include_router(shots_router)
 app.include_router(teams_router)
 
 
