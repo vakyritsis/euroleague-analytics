@@ -1,15 +1,20 @@
-from fastapi import FastAPI
 import psycopg
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.db import get_connection
 from app.routers.games import router as games_router
 from app.routers.players import router as players_router
+from app.routers.seasons import router as seasons_router
 from app.routers.shots import router as shots_router
 from app.routers.teams import router as teams_router
 
 app = FastAPI(title="EuroLeague Analytics API", version="0.1.0")
 app.include_router(games_router)
 app.include_router(players_router)
+app.include_router(seasons_router)
 app.include_router(shots_router)
 app.include_router(teams_router)
 
@@ -27,3 +32,8 @@ def database_health() -> dict[str, str]:
         return {"status": "ok"}
     except psycopg.Error:
         return {"status": "unavailable"}
+
+
+frontend_directory = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if frontend_directory.is_dir():
+    app.mount("/", StaticFiles(directory=frontend_directory, html=True), name="dashboard")
