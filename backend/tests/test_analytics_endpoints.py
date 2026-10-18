@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.routers import players, shots, teams
+from app.routers import players, seasons, shots, teams
 
 client = TestClient(app)
 
@@ -142,6 +142,17 @@ def test_get_team_returns_404_when_missing(monkeypatch):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Team not found"
+
+
+def test_list_seasons_returns_distinct_available_seasons_descending(monkeypatch):
+    connection = FakeConnection(rows=[{"season": 2025}, {"season": 2024}])
+    monkeypatch.setattr(seasons, "get_connection", lambda: connection)
+
+    response = client.get("/seasons")
+
+    assert response.status_code == 200
+    assert response.json() == [2025, 2024]
+    assert "UNION" in connection.query
 
 
 def test_list_shots_filters_by_season_player_team_and_game(monkeypatch):

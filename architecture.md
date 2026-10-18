@@ -27,12 +27,15 @@ CI/CD: GitHub Actions (lint/test → dbt build/test → Docker build → deploy)
 
 The FastAPI service exposes season-filtered analytics from the dbt marts and staging models:
 
+- `GET /seasons` — seasons with data in the game, player, or team marts, newest first.
 - `GET /players?season=<year>&team_code=<code>&limit=<n>&offset=<n>` — paginated player performance.
 - `GET /players/{player_id}?season=<year>` — one player's season performance; returns 404 when absent.
 - `GET /teams/{team_code}?season=<year>` — team record and scoring performance; returns 404 when absent.
 - `GET /shots?season=<year>&player_id=<id>&team_code=<code>&game_code=<id>&limit=<n>&offset=<n>` — filtered shot events.
 
-When `season` is omitted, the API uses the configured current season.
+When `season` is omitted, the API uses the configured current season. The dashboard season selector defaults to the latest season returned by `/seasons` and reports when a requested season is unavailable.
+The responsive Courtvision dashboard is served from the same FastAPI origin at `/`,
+so dashboard requests use these API routes without separate CORS configuration.
 
 ---
 

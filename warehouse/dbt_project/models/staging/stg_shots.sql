@@ -59,7 +59,14 @@ cleaned as (
             ''
         )::numeric as y_coordinate,
         nullif(coalesce(shot ->> 'PERIOD', shot ->> 'PERIOD_NUMBER'), '')::integer as period,
-        nullif(coalesce(shot ->> 'MINUTE', shot ->> 'MARKERTIME'), '') as game_clock,
+        nullif(
+            coalesce(
+                shot ->> 'CONSOLE',
+                shot ->> 'MARKERTIME',
+                shot ->> 'game_clock'
+            ),
+            ''
+        ) as game_clock,
         (source_ordinal - 1)::bigint as shot_index,
         loaded_at
     from shot_rows
